@@ -37,17 +37,25 @@ func Unpack(input string) (string, error) {
 				return "", ErrInvalidString
 			}
 		} else {
-			count, err := strconv.Atoi(string(input[i+1]))
+			err := addRepeated(&stringBuilder, input[i], input[i+1])
 			if err != nil {
 				return "", ErrInvalidString
 			}
-
-			r := strings.Repeat(string(input[i]), count)
-			stringBuilder.Write([]byte(r))
 
 			i++
 		}
 	}
 
 	return stringBuilder.String(), nil
+}
+
+func addRepeated(stringBuilder *strings.Builder, charToRepeat byte, countChar byte) error {
+	count, err := strconv.Atoi(string(countChar))
+	if err != nil {
+		return ErrInvalidString
+	}
+
+	r := strings.Repeat(string(charToRepeat), count)
+	stringBuilder.Write([]byte(r))
+	return nil
 }
