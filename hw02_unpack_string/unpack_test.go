@@ -16,11 +16,11 @@ func TestUnpack(t *testing.T) {
 		{input: "abccd", expected: "abccd"},
 		{input: "", expected: ""},
 		{input: "aaa0b", expected: "aab"},
-		// uncomment if task with asterisk completed
-		// {input: `qwe\4\5`, expected: `qwe45`},
-		// {input: `qwe\45`, expected: `qwe44444`},
-		// {input: `qwe\\5`, expected: `qwe\\\\\`},
-		// {input: `qwe\\\3`, expected: `qwe\3`},
+
+		{input: `qwe\4\5`, expected: `qwe45`},
+		{input: `qwe\45`, expected: `qwe44444`},
+		{input: `qwe\\5`, expected: `qwe\\\\\`},
+		{input: `qwe\\\3`, expected: `qwe\3`},
 	}
 
 	for _, tc := range tests {
@@ -41,5 +41,33 @@ func TestUnpackInvalidString(t *testing.T) {
 			_, err := Unpack(tc)
 			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
 		})
+	}
+}
+
+func TestUnpackAdditionaly(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedOutput string
+		expectedError  error
+	}{
+		{"", "", nil},
+		{"abc", "abc", nil},
+		{"123", "", ErrInvalidString},
+		{"a2b3", "aabbb", nil},
+		{"a4bc2d5e", "aaaabccddddde", nil},
+		{"3abc", "", ErrInvalidString},
+		{"aaa10b", "", ErrInvalidString},
+		{"aaa0b", "aab", nil},
+		{"d\n5abc", "d\n\n\n\n\nabc", nil},
+	}
+
+	for _, test := range tests {
+		output, err := Unpack(test.input)
+		if output != test.expectedOutput {
+			t.Errorf("For input %q, expected output %q, but got %q", test.input, test.expectedOutput, output)
+		}
+		if !errors.Is(err, test.expectedError) {
+			t.Errorf("For input %q, expected error %v, but got %v", test.input, test.expectedError, err)
+		}
 	}
 }
