@@ -21,6 +21,12 @@ func TestUnpack(t *testing.T) {
 		{input: `qwe\45`, expected: `qwe44444`},
 		{input: `qwe\\5`, expected: `qwe\\\\\`},
 		{input: `qwe\\\3`, expected: `qwe\3`},
+
+		{input: "я9", expected: "яяяяяяяяя"},
+		{input: "สวัสดี", expected: "สวัสดี"},
+		{input: "สวัส4ดี", expected: "สวัสสสสดี"},
+		{input: "🙃0", expected: ""},
+		{input: "🙂9", expected: "🙂🙂🙂🙂🙂🙂🙂🙂🙂"},
 	}
 
 	for _, tc := range tests {
@@ -59,6 +65,7 @@ func TestUnpackAdditionaly(t *testing.T) {
 		{"aaa10b", "", ErrInvalidString},
 		{"aaa0b", "aab", nil},
 		{"d\n5abc", "d\n\n\n\n\nabc", nil},
+		{"สวัสดี", "สวัสดี", nil},
 	}
 
 	for _, test := range tests {

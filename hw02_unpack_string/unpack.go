@@ -9,8 +9,9 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-func Unpack(input string) (string, error) {
+func Unpack(inputString string) (string, error) {
 	var stringBuilder strings.Builder
+	input := []rune(inputString)
 
 	for i := 0; i < len(input); i++ {
 		if unicode.IsDigit(rune(input[i])) {
@@ -49,7 +50,7 @@ func Unpack(input string) (string, error) {
 	return stringBuilder.String(), nil
 }
 
-func addRepeated(stringBuilder *strings.Builder, charToRepeat byte, countChar byte) error {
+func addRepeated(stringBuilder *strings.Builder, charToRepeat rune, countChar rune) error {
 	count, err := strconv.Atoi(string(countChar))
 	if err != nil {
 		return ErrInvalidString
