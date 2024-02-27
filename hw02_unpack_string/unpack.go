@@ -14,7 +14,7 @@ func Unpack(inputString string) (string, error) {
 	input := []rune(inputString)
 
 	for i := 0; i < len(input); i++ {
-		if unicode.IsDigit(rune(input[i])) {
+		if unicode.IsDigit(input[i]) {
 			return "", ErrInvalidString
 		}
 
@@ -30,7 +30,7 @@ func Unpack(inputString string) (string, error) {
 			break
 		}
 
-		isNextRuneIsNotDigit := !unicode.IsDigit(rune(input[i+1]))
+		isNextRuneIsNotDigit := !unicode.IsDigit(input[i+1])
 
 		if isNextRuneIsNotDigit {
 			_, err := stringBuilder.Write([]byte(string(input[i])))
