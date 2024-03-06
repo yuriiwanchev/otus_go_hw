@@ -57,28 +57,11 @@ func Top10Asterisk(input string) []string {
 		panic(err)
 	}
 
-	words := strings.Fields(normalized)
-
-	wordCount := make(map[string]int)
-	for _, word := range words {
-		wordCount[word]++
-	}
-
-	var wordList []string
-	for word := range wordCount {
-		wordList = append(wordList, word)
-	}
-
-	sort.Slice(wordList, func(i, j int) bool {
-		if wordCount[wordList[i]] == wordCount[wordList[j]] {
-			return wordList[i] < wordList[j]
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("Work failed:", err)
 		}
-		return wordCount[wordList[i]] > wordCount[wordList[j]]
-	})
+	}()
 
-	for i := 0; i < len(wordList[:10]); i++ {
-		fmt.Println(wordList[i] + ": " + fmt.Sprint(wordCount[wordList[i]]))
-	}
-
-	return wordList[:10]
+	return Top10(normalized)
 }
