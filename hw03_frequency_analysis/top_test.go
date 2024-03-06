@@ -80,3 +80,25 @@ func TestTop10(t *testing.T) {
 		}
 	})
 }
+
+func TestTop10Asterisk(t *testing.T) {
+	t.Run("no words in empty string", func(t *testing.T) {
+		require.Len(t, Top10Asterisk(""), 0)
+	})
+
+	t.Run("positive test", func(t *testing.T) {
+		expected := []string{
+			"а",         // 8
+			"он",        // 8
+			"и",         // 6
+			"ты",        // 5
+			"что",       // 5
+			"в",         // 4
+			"его",       // 4
+			"если",      // 4
+			"кристофер", // 4
+			"не",        // 4
+		}
+		require.Equal(t, expected, Top10Asterisk(text))
+	})
+}
