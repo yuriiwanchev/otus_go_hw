@@ -20,7 +20,7 @@ func Top10(input string) []string {
 		wordCount[word]++
 	}
 
-	var wordList []string
+	wordList := make([]string, 0, 10)
 	for word := range wordCount {
 		wordList = append(wordList, word)
 	}
@@ -48,7 +48,8 @@ func Top10Asterisk(input string) []string {
 	// Для нахождения одной небуквы между пробелами
 	regexStringBuilder.WriteString(`(?<=[\s])[^\p{L}\p{N}\s](?=[\s])|`)
 	// Для нахождения одной небуквы под конец слова (даже если это конец текста)
-	regexStringBuilder.WriteString(`(?<=[\p{L}\p{N}])[^\p{L}\p{N}](?<=[^\p{L}\p{N}\s])(?![\p{L}\p{N}\s])(?![^\p{L}\p{N}\s])`)
+	regexStringBuilder.WriteString(`(?<=[\p{L}\p{N}])[^\p{L}\p{N}]`)
+	regexStringBuilder.WriteString(`(?<=[^\p{L}\p{N}\s])(?![\p{L}\p{N}\s])(?![^\p{L}\p{N}\s])`)
 
 	lower := strings.ToLower(input)
 	re := regexp2.MustCompile(regexStringBuilder.String(), 0)
