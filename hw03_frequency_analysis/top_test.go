@@ -80,3 +80,46 @@ func TestTop10(t *testing.T) {
 		}
 	})
 }
+
+var additionalText = `Слово слово ?слово ?слово? ???слово? -слова слова, слова - слова
+	- 'много' много много ----- ----- ----- сло,,во сло,,во 
+	сло,во, сло,во, один один два два три три  четыре четыре 
+	пять шесть семь восемь девять`
+
+func TestTop10Asterisk(t *testing.T) {
+	t.Run("no words in empty string", func(t *testing.T) {
+		require.Len(t, Top10Asterisk(""), 0)
+	})
+
+	t.Run("positive test", func(t *testing.T) {
+		expected := []string{
+			"а",         // 8
+			"он",        // 8
+			"и",         // 6
+			"ты",        // 5
+			"что",       // 5
+			"в",         // 4
+			"его",       // 4
+			"если",      // 4
+			"кристофер", // 4
+			"не",        // 4
+		}
+		require.Equal(t, expected, Top10Asterisk(text))
+	})
+
+	t.Run("additional test", func(t *testing.T) {
+		expected := []string{
+			"слово",   // 5
+			"слова",   // 4
+			"-----",   // 3
+			"много",   // 3
+			"два",     // 2
+			"один",    // 2
+			"сло,,во", // 2
+			"сло,во",  // 2
+			"три",     // 2
+			"четыре",  // 2
+		}
+		require.Equal(t, expected, Top10Asterisk(additionalText))
+	})
+}

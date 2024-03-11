@@ -15,6 +15,7 @@ linters-settings:
         allow:
           - $gostd
           - github.com/stretchr/testify/require
+          - github.com/dlclark/regexp2
 
 issues:
   exclude-rules:
