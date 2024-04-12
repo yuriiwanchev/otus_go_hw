@@ -65,7 +65,8 @@ func EndAllTasks(taskChannel chan Task, errorChannel chan error, closeTasksWaite
 }
 
 func TaskProcessing(taskChannel chan Task, errorChannel chan error, errorsLimit int, mutex *sync.Mutex,
-	tasksDoneWaiter *sync.WaitGroup, stopTasks *bool, errorsCount *int) {
+	tasksDoneWaiter *sync.WaitGroup, stopTasks *bool, errorsCount *int,
+) {
 	for {
 		taskFunc, ok := <-taskChannel
 		if !ok {
