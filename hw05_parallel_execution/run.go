@@ -1,7 +1,6 @@
 package hw05parallelexecution
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -11,13 +10,23 @@ var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
 type Task func() error
 
+type ErS struct {
+	mutex       sync.Mutex
+	errorsCount int
+	errorsLimit int
+	stopTasks   bool
+}
+
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
-func Run(tasks []Task, goroutinesNum, errorsLimit int) error {
-	ch := make(chan Task, len(tasks))
+func Run(tasks []Task, workersNum, errorsLimit int) error {
+	taskChannel := make(chan Task, len(tasks))
 	for _, task := range tasks {
-		ch <- task
+		taskChannel <- task
 	}
-	close(ch)
+	close(taskChannel)
+	// allDoneChannel := make(chan interface{})
+	// errorChannel := make(chan error, workersNum)
+	errorChannel := make(chan error)
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(tasks))
@@ -27,67 +36,57 @@ func Run(tasks []Task, goroutinesNum, errorsLimit int) error {
 	errorsCount := 0
 	stopTasks := false
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	for i := 0; i < goroutinesNum; i++ {
-		go func(ctx context.Context) {
+	go func() {
+		_, ok := <-errorChannel
+		if ok {
 			for {
-				// select {
-				// case <-ctx.Done():
-				// 	wg.Done()
-				// 	return
-				// case taskFunc := <-ch:
-				// 	fmt.Println("Task Start")
-				// 	taskError := taskFunc()
-				// 	fmt.Println("Task End")
-				// 	if taskError != nil && errorsLimit > 0 {
-				// 		mutex.Lock()
-				// 		errorsCount++
-				// 		if errorsCount >= errorsLimit {
-				// 			cancel()
-				// 		}
-				// 		mutex.Unlock()
-				// 	}
-				// 	wg.Done()
-				// }
-
-				taskFunc, ok := <-ch
+				_, ok := <-taskChannel
 				if !ok {
-					fmt.Print("?")
 					return
 				}
 
-				if stopTasks {
-					wg.Done()
-					fmt.Print("s")
-					continue
-				}
-
-				taskError := taskFunc()
-				if taskError != nil && errorsLimit > 0 {
-					mutex.Lock()
-					errorsCount++
-					if errorsCount >= errorsLimit {
-						// cancel()
-						fmt.Print("!")
-						stopTasks = true
-					}
-					mutex.Unlock()
-					fmt.Print(errorsCount)
-				}
-
-				fmt.Print("+")
 				wg.Done()
 			}
+		}
+	}()
 
-		}(ctx)
+	for i := 0; i < workersNum; i++ {
+		go func() {
+			for {
+				taskFunc, ok := <-taskChannel
+				if !ok {
+					return
+				}
+				taskError := taskFunc()
+				wg.Done()
+
+				mutex.Lock()
+				if taskError != nil && errorsLimit > 0 {
+					errorsCount++
+					if errorsCount >= errorsLimit {
+						if stopTasks {
+							mutex.Unlock()
+							return
+						}
+						stopTasks = true
+						errorChannel <- ErrErrorsLimitExceeded
+						close(errorChannel)
+						fmt.Print("*")
+						mutex.Unlock()
+						return
+					}
+				}
+				mutex.Unlock()
+			}
+		}()
 	}
 
 	wg.Wait()
-	cancel()
 
 	if stopTasks {
 		return ErrErrorsLimitExceeded
+	} else {
+		errorChannel <- ErrErrorsLimitExceeded
 	}
 
 	return nil
