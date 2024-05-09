@@ -1,7 +1,7 @@
 package hw06pipelineexecution
 
 import (
-	"sync"
+	"fmt"
 )
 
 type (
@@ -18,7 +18,6 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	}
 
 	out := doStage(done, stages[0], in)
-
 	for i := 1; i < len(stages); i++ {
 		out = doStage(done, stages[i], out)
 	}
@@ -30,38 +29,19 @@ func doStage(done In, stage Stage, in In) Out {
 	valueStream := make(Bi)
 	out := stage(in)
 
-	closeStream := make(chan bool)
-
-	stopWrite := false
-
-	mutex := sync.Mutex{}
-
 	go func() {
 		for s := range out {
-			mutex.Lock()
-			if !stopWrite {
+			select {
+			case <-done:
+				close(valueStream)
+				return
+			default:
+				fmt.Printf("stage: %v\n", s)
 				valueStream <- s
-				mutex.Unlock()
-				continue
 			}
-			mutex.Unlock()
-			break
 		}
 
-		closeStream <- true
-	}()
-
-	go func() {
-		<-done
-		closeStream <- true
-	}()
-
-	go func() {
-		<-closeStream
-		mutex.Lock()
-		stopWrite = true
 		close(valueStream)
-		mutex.Unlock()
 	}()
 
 	return valueStream
