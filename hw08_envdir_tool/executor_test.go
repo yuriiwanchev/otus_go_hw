@@ -17,7 +17,7 @@ else
 fi
 `
 	scriptFile := "/testscript.sh"
-	err := os.WriteFile(scriptFile, []byte(script), 0755)
+	err := os.WriteFile(scriptFile, []byte(script), 0o755)
 	if err != nil {
 		t.Fatalf("Failed to create test script: %v", err)
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +10,7 @@ import (
 
 func TestReadDir(t *testing.T) {
 	// Create a temporary directory for the test
-	tempDir, err := ioutil.TempDir("", "testdir")
+	tempDir, err := os.MkdirTemp("", "testdir")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -34,13 +33,13 @@ func TestReadDir(t *testing.T) {
 	testsForNoIncludeFiles := []string{"=HIDDEN", "HID=DEN", ".HIDDEN"}
 
 	for _, tt := range normalTests {
-		err := os.WriteFile(filepath.Join(tempDir, tt.filename), []byte(tt.content), 0644)
+		err := os.WriteFile(filepath.Join(tempDir, tt.filename), []byte(tt.content), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to write file: %v", err)
 		}
 	}
 	for _, tt := range testsForNoIncludeFiles {
-		err := os.WriteFile(filepath.Join(tempDir, tt), []byte(tt), 0644)
+		err := os.WriteFile(filepath.Join(tempDir, tt), []byte(tt), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to write file: %v", err)
 		}

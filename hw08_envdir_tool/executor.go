@@ -38,12 +38,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 
 	err := cmdExec.Run()
 	if err != nil {
-		exitErr, ok := err.(*exec.ExitError)
-		if ok {
-			return exitErr.ExitCode()
-		} else {
-			fmt.Fprintf(os.Stderr, "Error running command: %v\n", err)
-		}
+		fmt.Fprintf(os.Stderr, "Error running command: %v\n", err)
 	}
 
 	returnCode = cmdExec.ProcessState.ExitCode()
