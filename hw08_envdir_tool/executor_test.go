@@ -2,27 +2,47 @@ package main
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunCmd(t *testing.T) {
-	// Create a temporary script file for testing
-	script := `#!/bin/sh
-if [ "$1" = "success" ]; then
-  exit 0
-else
-  exit 1
-fi
-`
-	scriptFile := "/testscript.sh"
-	err := os.WriteFile(scriptFile, []byte(script), 0o755)
-	if err != nil {
-		t.Fatalf("Failed to create test script: %v", err)
+func buildTestCommand(t *testing.T) string {
+	cmdName := "testcommand"
+	if runtime.GOOS == "windows" {
+		cmdName += ".exe"
 	}
 
-	defer os.Remove(scriptFile)
+	cmdPath := filepath.Join(os.TempDir(), cmdName)
+	cmd := exec.Command("go", "build", "-o", cmdPath, "./testdata/testcommand.go")
+	err := cmd.Run()
+	if err != nil {
+		t.Fatalf("Failed to build test command: %v", err)
+	}
+	return cmdPath
+}
+
+func TestRunCmd(t *testing.T) {
+	// Create a temporary script file for testing
+	// 	script := `#!/bin/bash
+	// if [ "$1" = "success" ]; then
+	//   exit 0
+	// else
+	//   exit 1
+	// fi
+	// `
+	// scriptFile := "./testscript.sh"
+	// err := os.WriteFile(scriptFile, []byte(script), 0o755)
+	// if err != nil {
+	// 	t.Fatalf("Failed to create test script: %v", err)
+	// }
+
+	// defer os.Remove(scriptFile)
+
+	scriptFile := buildTestCommand(t)
 
 	tests := []struct {
 		name       string
@@ -68,10 +88,14 @@ fi
 			os.Setenv("SWAP_ENV", "value")
 
 			gotStatus := RunCmd(tt.cmd, tt.env)
-			for key, value := range tt.env {
+			for key, env := range tt.env {
 				envValue, exists := os.LookupEnv(key)
-				assert.True(t, exists)
-				assert.Equal(t, value, envValue)
+				if env.NeedRemove {
+					assert.False(t, exists, "Environment variable %s should not exist", key)
+					continue
+				}
+				assert.True(t, exists, "Environment variable %s should exist", key)
+				assert.Equal(t, env.Value, envValue, "Environment variable %s should have value %s", key, env.Value)
 			}
 
 			assert.Equal(t, tt.wantStatus, gotStatus)
