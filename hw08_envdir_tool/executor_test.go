@@ -11,6 +11,7 @@ import (
 )
 
 func buildTestCommand(t *testing.T) string {
+	t.Helper()
 	cmdName := "testcommand"
 	if runtime.GOOS == "windows" {
 		cmdName += ".exe"
@@ -26,22 +27,6 @@ func buildTestCommand(t *testing.T) string {
 }
 
 func TestRunCmd(t *testing.T) {
-	// Create a temporary script file for testing
-	// 	script := `#!/bin/bash
-	// if [ "$1" = "success" ]; then
-	//   exit 0
-	// else
-	//   exit 1
-	// fi
-	// `
-	// scriptFile := "./testscript.sh"
-	// err := os.WriteFile(scriptFile, []byte(script), 0o755)
-	// if err != nil {
-	// 	t.Fatalf("Failed to create test script: %v", err)
-	// }
-
-	// defer os.Remove(scriptFile)
-
 	scriptFile := buildTestCommand(t)
 
 	tests := []struct {
