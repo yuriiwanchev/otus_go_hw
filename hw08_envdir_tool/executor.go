@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"os/exec"
 )
@@ -34,7 +33,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	cmdExec.Stdout = os.Stdout
 	cmdExec.Stderr = os.Stderr
 
-	slog.Info("running command", "cmd", cmdExec.String())
+	// slog.Info("running command", "cmd", cmdExec.String())
 
 	err := cmdExec.Run()
 	if err != nil {
