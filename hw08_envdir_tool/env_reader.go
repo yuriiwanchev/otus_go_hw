@@ -26,7 +26,7 @@ func ReadDir(dir string) (Environment, error) {
 	env := make(Environment)
 
 	for _, file := range files {
-		if file.IsDir() || strings.HasPrefix(file.Name(), ".") {
+		if file.IsDir() || isFilenameIncorrect(file.Name()) {
 			continue
 		}
 
@@ -39,13 +39,17 @@ func ReadDir(dir string) (Environment, error) {
 			return nil, err
 		}
 
-		env[fileName] = ProcessData(data)
+		env[fileName] = processData(data)
 	}
 
 	return env, nil
 }
 
-func ProcessData(data []byte) EnvValue {
+func isFilenameIncorrect(filename string) bool {
+	return strings.Contains(filename, ".") || strings.Contains(filename, "=")
+}
+
+func processData(data []byte) EnvValue {
 	if len(data) == 0 {
 		return EnvValue{Value: "", NeedRemove: true}
 	}
