@@ -28,58 +28,78 @@ type validateTag struct {
 	Value string
 }
 
+type SoftwareError struct {
+	Message string
+}
+
+func (e SoftwareError) Error() string {
+	return e.Message
+}
+
 func Validate(v interface{}) error {
-	var errs ValidationErrors
+	var validationErrs ValidationErrors
 
-	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
+	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
 	}
-	typ := val.Type()
+	valueType := value.Type()
 
-	for i := 0; i < val.NumField(); i++ {
-		field := typ.Field(i)
-		fieldVal := val.Field(i)
+	for i := 0; i < value.NumField(); i++ {
+		field := valueType.Field(i)
+		fieldVal := value.Field(i)
 
 		tag := field.Tag.Get("validate")
 		if tag == "" {
 			continue
 		}
 
-		rules := parseTag(tag)
+		rules, err := parseTag(tag)
+		if err != nil {
+			return fmt.Errorf("error parsing tag on field %s: %w", field.Name, err)
+		}
 		fieldName := field.Name
 
 		for _, rule := range rules {
-			err := applyRule(fieldVal, rule)
+			validationErr, err := applyRule(fieldVal, rule)
 			if err != nil {
-				errs = append(errs, ValidationError{Field: fieldName, Err: err})
+				return err
 			}
+			if validationErr != nil {
+				if _, ok := err.(ValidationErrors); ok {
+					validationErrs = append(validationErrs, ValidationError{Field: fieldName, Err: err})
+				}
+			}
+			// if validationErr != nil {
+			// 	validationErrs = append(validationErrs, ValidationError{Field: fieldName, Err: validationErr})
+			// }
 		}
 	}
 
-	if len(errs) > 0 {
-		return errs
+	if len(validationErrs) > 0 {
+		return validationErrs
 	}
 	return nil
 }
 
 // parseTag parses the validate tag into individual validation rules.
-func parseTag(tag string) []validateTag {
+func parseTag(tag string) ([]validateTag, error) {
 	rules := strings.Split(tag, "|")
 	var tags []validateTag
 
 	for _, rule := range rules {
 		parts := strings.Split(rule, ":")
-		if len(parts) == 2 {
-			tags = append(tags, validateTag{Key: parts[0], Value: parts[1]})
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid tag format: %s", rule)
 		}
+		tags = append(tags, validateTag{Key: parts[0], Value: parts[1]})
 	}
 
-	return tags
+	return tags, nil
 }
 
 // applyRule applies a single validation rule to a field.
-func applyRule(fieldVal reflect.Value, rule validateTag) error {
+func applyRule(fieldVal reflect.Value, rule validateTag) (error, error) {
 	switch fieldVal.Kind() {
 	case reflect.String:
 		return validateString(fieldVal.String(), rule)
@@ -89,85 +109,88 @@ func applyRule(fieldVal reflect.Value, rule validateTag) error {
 		return validateSlice(fieldVal, rule)
 	case reflect.Struct:
 		if rule.Key == "nested" {
-			return Validate(fieldVal.Interface())
+			return Validate(fieldVal.Interface()), nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // validateString validates a string based on a rule.
-func validateString(value string, rule validateTag) error {
+func validateString(value string, rule validateTag) (error, error) {
 	switch rule.Key {
 	case "len":
-		expectedLen, _ := strconv.Atoi(rule.Value)
+		expectedLen, err := strconv.Atoi(rule.Value)
+		if err != nil {
+			return nil, err
+		}
 		if len(value) != expectedLen {
-			return fmt.Errorf("must be %d characters long", expectedLen)
+			return fmt.Errorf("must be %d characters long", expectedLen), nil
 		}
 	case "regexp":
 		re, err := regexp.Compile(rule.Value)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !re.MatchString(value) {
-			return fmt.Errorf("must match regexp %s", rule.Value)
+			return fmt.Errorf("must match regexp %s", rule.Value), nil
 		}
 	case "in":
 		validValues := strings.Split(rule.Value, ",")
 		for _, v := range validValues {
 			if value == v {
-				return nil
+				return nil, nil
 			}
 		}
-		return fmt.Errorf("must be one of %v", validValues)
+		return fmt.Errorf("must be one of %v", validValues), nil
 	}
-	return nil
+	return nil, nil
 }
 
 // validateInt validates an int based on a rule.
-func validateInt(value int, rule validateTag) error {
+func validateInt(value int, rule validateTag) (error, error) {
 	switch rule.Key {
 	case "min":
-		minVal, _ := strconv.Atoi(rule.Value)
+		minVal, err := strconv.Atoi(rule.Value)
+		if err != nil {
+			return nil, err
+		}
 		if value < minVal {
-			return fmt.Errorf("must be at least %d", minVal)
+			return fmt.Errorf("must be at least %d", minVal), nil
 		}
 	case "max":
-		maxVal, _ := strconv.Atoi(rule.Value)
+		maxVal, err := strconv.Atoi(rule.Value)
+		if err != nil {
+			return nil, err
+		}
 		if value > maxVal {
-			return fmt.Errorf("must be at most %d", maxVal)
+			return fmt.Errorf("must be at most %d", maxVal), nil
 		}
 	case "in":
 		validValues := strings.Split(rule.Value, ",")
 		for _, v := range validValues {
-			intVal, _ := strconv.Atoi(v)
+			intVal, err := strconv.Atoi(v)
+			if err != nil {
+				return nil, err
+			}
 			if value == intVal {
-				return nil
+				return nil, nil
 			}
 		}
-		return fmt.Errorf("must be one of %v", validValues)
+		return fmt.Errorf("must be one of %v", validValues), nil
 	}
-	return nil
+	return nil, nil
 }
 
 // validateSlice validates each element of a slice based on a rule.
-func validateSlice(value reflect.Value, rule validateTag) error {
+func validateSlice(value reflect.Value, rule validateTag) (error, error) {
 	for i := 0; i < value.Len(); i++ {
-		err := applyRule(value.Index(i), rule)
+		validationErr, err := applyRule(value.Index(i), rule)
 		if err != nil {
-			return fmt.Errorf("element %d: %v", i, err)
+			return nil, err
+		}
+		if validationErr != nil {
+			return fmt.Errorf("element %d: %v", i, err), nil
 		}
 	}
-	return nil
-}
-
-// Example usage
-// type User struct {
-// 	Name   string `validate:"len:32|regexp:\\d+"`
-// 	Age    int    `validate:"min:18|max:65"`
-// 	Scores []int  `validate:"min:0|max:100"`
-// 	Meta   Meta   `validate:"nested"`
-// }
-
-type Meta struct {
-	Description string `validate:"len:10|in:foo,bar,baz"`
+	return nil, nil
 }
