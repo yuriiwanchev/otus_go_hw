@@ -1,7 +1,6 @@
 package hw09structvalidator
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -15,11 +14,15 @@ type (
 	User struct {
 		ID     string `json:"id" validate:"len:36"`
 		Name   string
-		Age    int             `validate:"min:18|max:50"`
-		Email  string          `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
-		Role   UserRole        `validate:"in:admin,stuff"`
-		Phones []string        `validate:"len:11"`
-		meta   json.RawMessage //nolint:unused
+		Age    int      `validate:"min:18|max:50"`
+		Email  string   `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
+		Role   UserRole `validate:"in:admin,stuff"`
+		Phones []string `validate:"len:11"`
+		Meta   Meta     `validate:"nested"`
+	}
+
+	Meta struct {
+		Description string `validate:"len:1"`
 	}
 
 	App struct {
@@ -46,11 +49,15 @@ func TestValidate(t *testing.T) {
 		{
 			in: User{
 				ID:    "12345678-1234-1234-1234-123456789012",
+				Name:  "John",
 				Age:   20,
 				Email: "test@example.com",
 				Role:  "admin",
 				Phones: []string{
 					"12345678901",
+				},
+				Meta: Meta{
+					Description: "t",
 				},
 			},
 			expectedErr: nil,
@@ -58,11 +65,15 @@ func TestValidate(t *testing.T) {
 		{
 			in: User{
 				ID:    "short-id",
+				Name:  "John",
 				Age:   17,
 				Email: "invalid-email",
 				Role:  "user",
 				Phones: []string{
 					"short",
+				},
+				Meta: Meta{
+					Description: "test",
 				},
 			},
 			expectedErr: ValidationErrors{
@@ -71,15 +82,49 @@ func TestValidate(t *testing.T) {
 				{Field: "Email", Err: fmt.Errorf("must match regexp ^\\w+@\\w+\\.\\w+$")},
 				{Field: "Role", Err: fmt.Errorf("must be one of [admin stuff]")},
 				{Field: "Phones", Err: fmt.Errorf("element 0: must be 11 characters long")},
+				{Field: "Meta", Err: ValidationErrors{
+					{Field: "Description", Err: fmt.Errorf("must be 1 characters long")},
+				},
+				},
+			},
+		},
+		{
+			in: User{
+				ID:    "12345678-1234-1234-1234-123456789012",
+				Name:  "John",
+				Age:   55,
+				Email: "test@example.com",
+				Role:  "admin",
+				Phones: []string{
+					"12345678901",
+				},
+				Meta: Meta{
+					Description: "t",
+				},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "Age", Err: fmt.Errorf("must be at most 50")},
 			},
 		},
 		{
 			in: App{
 				Version: "1.0.0",
 			},
+			expectedErr: nil,
+		},
+		{
+			in: App{
+				Version: "1.0.0.0",
+			},
 			expectedErr: ValidationErrors{
 				{Field: "Version", Err: fmt.Errorf("must be 5 characters long")},
 			},
+		},
+		{
+			in: Response{
+				Code: 200,
+			},
+			expectedErr: nil,
 		},
 		{
 			in: Response{
