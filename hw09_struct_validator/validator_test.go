@@ -1,6 +1,7 @@
 package hw09structvalidator
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -82,9 +83,10 @@ func TestValidate(t *testing.T) {
 				{Field: "Email", Err: fmt.Errorf("must match regexp ^\\w+@\\w+\\.\\w+$")},
 				{Field: "Role", Err: fmt.Errorf("must be one of [admin stuff]")},
 				{Field: "Phones", Err: fmt.Errorf("element 0: must be 11 characters long")},
-				{Field: "Meta", Err: ValidationErrors{
-					{Field: "Description", Err: fmt.Errorf("must be 1 characters long")},
-				},
+				{
+					Field: "Meta", Err: ValidationErrors{
+						{Field: "Description", Err: fmt.Errorf("must be 1 characters long")},
+					},
 				},
 			},
 		},
@@ -146,20 +148,25 @@ func TestValidate(t *testing.T) {
 				assert.Error(t, err)
 				assert.IsType(t, tt.expectedErr, err)
 
-				expectedValidationErrors := tt.expectedErr.(ValidationErrors)
-				actualValidationErrors := err.(ValidationErrors)
+				var expectedValidationErrors *ValidationErrors
+				_ = errors.As(tt.expectedErr, &expectedValidationErrors)
 
-				assert.Equal(t, len(expectedValidationErrors), len(actualValidationErrors))
+				var actualValidationErrors *ValidationErrors
+				ok := errors.As(err, &actualValidationErrors)
 
-				for _, expectedErr := range expectedValidationErrors {
-					found := false
-					for _, actualErr := range actualValidationErrors {
-						if actualErr.Field == expectedErr.Field && actualErr.Err.Error() == expectedErr.Err.Error() {
-							found = true
-							break
+				if ok {
+					assert.Equal(t, len(*expectedValidationErrors), len(*actualValidationErrors))
+
+					for _, expectedErr := range *expectedValidationErrors {
+						found := false
+						for _, actualErr := range *actualValidationErrors {
+							if actualErr.Field == expectedErr.Field && actualErr.Err.Error() == expectedErr.Err.Error() {
+								found = true
+								break
+							}
 						}
+						assert.True(t, found, fmt.Sprintf("expected error for field %s not found", expectedErr.Field))
 					}
-					assert.True(t, found, fmt.Sprintf("expected error for field %s not found", expectedErr.Field))
 				}
 			}
 		})
