@@ -17,6 +17,8 @@ linters-settings:
           - github.com/stretchr/testify/require
           - github.com/dlclark/regexp2
           - github.com/stretchr/testify/assert
+  exhaustive:
+    default-signifies-exhaustive: true
 
 issues:
   exclude-rules:
