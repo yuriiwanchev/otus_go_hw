@@ -4,8 +4,6 @@ go 1.19
 
 require github.com/stretchr/testify v1.7.0
 
-require golang.org/x/tools v0.22.0 // indirect
-
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/goccy/go-json v0.10.3
