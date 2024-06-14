@@ -2,10 +2,11 @@ package hw10programoptimization
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 type User struct {
@@ -21,25 +22,19 @@ type User struct {
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	result := make(DomainStat)
+	domainStat := make(DomainStat)
 	scanner := bufio.NewScanner(r)
+	domainSuffix := "." + domain
 
 	for scanner.Scan() {
-		var user User
-		line := scanner.Text()
-		if err := json.Unmarshal([]byte(line), &user); err != nil {
-			return nil, fmt.Errorf("error unmarshalling user: %w", err)
-		}
+		line := scanner.Bytes()
+		email := extractEmail(line)
 
-		emailParts := strings.Split(user.Email, "@")
-		if len(emailParts) != 2 {
-			continue
-		}
-		emailDomain := strings.ToLower(emailParts[1])
-
-		if strings.HasSuffix(emailDomain, "."+domain) {
-			primaryDomain := strings.TrimSuffix(emailDomain, "."+domain)
-			result[primaryDomain]++
+		if strings.HasSuffix(email, domainSuffix) {
+			domainPart := strings.SplitN(email, "@", 2)[1]
+			// domainName := strings.ToLower(strings.SplitN(domainPart, ".", 2)[0])
+			domainName := strings.ToLower(domainPart)
+			domainStat[domainName]++
 		}
 	}
 
@@ -47,50 +42,15 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 		return nil, fmt.Errorf("error reading input: %w", err)
 	}
 
-	return result, nil
+	return domainStat, nil
 }
 
-// func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-// 	u, err := getUsers(r)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("get users error: %w", err)
-// 	}
-// 	return countDomains(u, domain)
-// }
+func extractEmail(line []byte) string {
+	var d User
+	err := json.Unmarshal(line, &d)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+	}
 
-// type users [100_000]User
-
-// func getUsers(r io.Reader) (result users, err error) {
-// 	content, err := io.ReadAll(r)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	lines := strings.Split(string(content), "\n")
-// 	for i, line := range lines {
-// 		var user User
-// 		if err = json.Unmarshal([]byte(line), &user); err != nil {
-// 			return
-// 		}
-// 		result[i] = user
-// 	}
-// 	return
-// }
-
-// func countDomains(u users, domain string) (DomainStat, error) {
-// 	result := make(DomainStat)
-
-// 	for _, user := range u {
-// 		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		if matched {
-// 			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-// 			num++
-// 			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
-// 		}
-// 	}
-// 	return result, nil
-// }
+	return d.Email
+}
