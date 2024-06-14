@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func GetDomainStat_Old(r io.Reader, domain string) (DomainStat, error) {
+func GetDomainStatOld(r io.Reader, domain string) (DomainStat, error) {
 	u, err := getUsers(r)
 	if err != nil {
 		return nil, fmt.Errorf("get users error: %w", err)
