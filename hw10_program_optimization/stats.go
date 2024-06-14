@@ -1,11 +1,12 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"io"
-	"regexp"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 type User struct {
@@ -21,46 +22,35 @@ type User struct {
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %w", err)
+	domainStat := make(DomainStat)
+	scanner := bufio.NewScanner(r)
+	domainSuffix := "." + domain
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		email := extractEmail(line)
+
+		if strings.HasSuffix(email, domainSuffix) {
+			domainPart := strings.SplitN(email, "@", 2)[1]
+			// domainName := strings.ToLower(strings.SplitN(domainPart, ".", 2)[0])
+			domainName := strings.ToLower(domainPart)
+			domainStat[domainName]++
+		}
 	}
-	return countDomains(u, domain)
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading input: %w", err)
+	}
+
+	return domainStat, nil
 }
 
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := io.ReadAll(r)
+func extractEmail(line []byte) string {
+	var d User
+	err := json.Unmarshal(line, &d)
 	if err != nil {
-		return
+		fmt.Printf("Error: %s\n", err)
 	}
 
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
-	}
-	return
-}
-
-func countDomains(u users, domain string) (DomainStat, error) {
-	result := make(DomainStat)
-
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
-		}
-
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
-		}
-	}
-	return result, nil
+	return d.Email
 }
