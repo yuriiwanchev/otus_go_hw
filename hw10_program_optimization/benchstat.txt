@@ -1,0 +1,17 @@
+goos: windows
+goarch: amd64
+pkg: github.com/yuriiwanchev/otus_go_hw/hw10_program_optimization
+cpu: AMD Ryzen 5 5600X 6-Core Processor             
+                 │   old.txt    │               new.txt                │
+                 │    sec/op    │    sec/op     vs base                │
+GetDomainStat-12   0.4014n ± 1%   0.1095n ± 9%  -72.72% (p=0.000 n=10)
+
+                 │  old.txt   │            new.txt             │
+                 │    B/op    │    B/op     vs base            │
+GetDomainStat-12   0.000 ± 0%   0.000 ± 0%  ~ (p=1.000 n=10) ¹
+¹ all samples are equal
+
+                 │  old.txt   │            new.txt             │
+                 │ allocs/op  │ allocs/op   vs base            │
+GetDomainStat-12   0.000 ± 0%   0.000 ± 0%  ~ (p=1.000 n=10) ¹
+¹ all samples are equal
