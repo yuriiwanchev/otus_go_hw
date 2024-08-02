@@ -1,0 +1,16 @@
+goos: windows
+goarch: amd64
+pkg: github.com/yuriiwanchev/otus_go_hw/hw10_program_optimization
+cpu: AMD Ryzen 5 5600X 6-Core Processor             
+BenchmarkGetDomainStat-12    	1000000000	         0.1190 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1074 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1179 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1086 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1099 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1079 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1091 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1265 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1103 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGetDomainStat-12    	1000000000	         0.1083 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/yuriiwanchev/otus_go_hw/hw10_program_optimization	11.313s
