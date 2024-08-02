@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
+	"os"
 	"time"
 )
 
@@ -33,9 +35,10 @@ func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, ou
 func (c *telnetClient) Connect() error {
 	conn, err := net.DialTimeout("tcp", c.address, c.timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect: %w", err)
 	}
 	c.conn = conn
+	fmt.Fprintf(os.Stderr, "...Connected to %s\n", c.address)
 	return nil
 }
 

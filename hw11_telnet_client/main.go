@@ -3,68 +3,59 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
 
 func main() {
-	var timeout string
-	flag.StringVar(&timeout, "timeout", "10s", "connection timeout")
+	timeout := flag.Duration("timeout", 10*time.Second, "connection timeout")
 	flag.Parse()
-
-	if len(flag.Args()) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: go-telnet --timeout=10s host port")
-		os.Exit(1)
+	if flag.NArg() < 2 {
+		fmt.Println("Usage: go-telnet --timeout=10s host port")
+		return
 	}
 
-	address := net.JoinHostPort(flag.Args()[0], flag.Args()[1])
-	duration, err := time.ParseDuration(timeout)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "invalid timeout value")
-		os.Exit(1)
-	}
+	address := fmt.Sprintf("%s:%s", flag.Arg(0), flag.Arg(1))
+	client := NewTelnetClient(address, *timeout, os.Stdin, os.Stdout)
 
-	client := NewTelnetClient(address, duration, os.Stdin, os.Stdout)
 	if err := client.Connect(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to connect: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return
 	}
 	defer client.Close()
 
-	fmt.Fprintf(os.Stderr, "...Connected to %s\n", address)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT)
-
-	go func() {
-		if err := client.Receive(); err != nil {
-			fmt.Fprintf(os.Stderr, "receive error: %v\n", err)
-		}
-		os.Exit(0)
-	}()
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
 		if err := client.Send(); err != nil {
-			fmt.Fprintf(os.Stderr, "send error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "...Connection was closed by peer\n")
+			return
 		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := client.Receive(); err != nil {
+			fmt.Fprintf(os.Stderr, "...Connection was closed by peer\n")
+			return
+		}
+	}()
+
+	go func() {
+		<-sigChan
+		client.Close()
+		fmt.Fprintf(os.Stderr, "...Received SIGINT, closing connection\n")
 		os.Exit(0)
 	}()
 
-	select {
-	case <-sigCh:
-		fmt.Fprintln(os.Stderr, "...Interrupted")
-	case <-func() chan struct{} {
-		done := make(chan struct{})
-		go func() {
-			io.Copy(io.Discard, os.Stdin)
-			close(done)
-		}()
-		return done
-	}():
-		fmt.Fprintln(os.Stderr, "...EOF")
-	}
+	wg.Wait()
+	fmt.Fprintf(os.Stderr, "...EOF\n")
 }
