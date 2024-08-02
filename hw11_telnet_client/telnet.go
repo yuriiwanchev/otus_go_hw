@@ -44,17 +44,30 @@ func (c *telnetClient) Connect() error {
 
 func (c *telnetClient) Close() error {
 	if c.conn != nil {
-		return c.conn.Close()
+		err := c.conn.Close()
+		return err
 	}
 	return nil
 }
 
 func (c *telnetClient) Send() error {
+	if c.conn == nil {
+		return fmt.Errorf("connection is closed")
+	}
+	if c.in == nil {
+		return fmt.Errorf("input stream is closed")
+	}
 	_, err := io.Copy(c.conn, c.in)
 	return err
 }
 
 func (c *telnetClient) Receive() error {
+	if c.conn == nil {
+		return fmt.Errorf("connection is closed")
+	}
+	if c.out == nil {
+		return fmt.Errorf("output stream is closed")
+	}
 	_, err := io.Copy(c.out, c.conn)
 	return err
 }
